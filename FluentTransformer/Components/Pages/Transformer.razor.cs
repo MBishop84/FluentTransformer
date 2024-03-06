@@ -35,12 +35,14 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             var envHeight = await JsRuntime.InvokeAsync<int>("getDimensions");
-            _rows = envHeight / 25;
+            _rows = envHeight / 23;
         }
 
         #endregion Constructors
 
         #region Private Methods
+
+        private void Clear() => _input = _output = string.Empty;
 
         private void Transform()
         {
