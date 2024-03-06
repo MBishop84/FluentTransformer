@@ -1,0 +1,21 @@
+﻿@page "/theme"
+
+<PageTitle>Home</PageTitle>
+<FluentDesignTheme Mode="@Mode"
+                   OfficeColor="@OfficeColor"
+                   StorageName="customTheme" />
+
+<FluentSelect Label="Theme"
+              Width="250px"
+              Items="@(Enum.GetValues<DesignThemeModes>())"
+              @bind-SelectedOption="@Mode" />
+
+<FluentSelect Label="Color"
+              Width="250px"
+              Items="@(Enum.GetValues<OfficeColor>())"
+              @bind-SelectedOption="@OfficeColor" />
+
+@code {
+    public DesignThemeModes Mode { get; set; } = DesignThemeModes.System;
+    public OfficeColor OfficeColor { get; set; } = OfficeColor.Windows;
+}

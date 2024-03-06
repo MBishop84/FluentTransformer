@@ -1,0 +1,110 @@
+﻿@page "/"
+@rendermode InteractiveServer
+
+<PageTitle>Transformer</PageTitle>
+
+<FluentGrid Spacing="2" Justify="JustifyContent.Center">
+    <FluentGridItem xs="4">
+        <FluentTextArea @bind-Value=_input style="width: 100%;" Rows="@_rows" Placeholder="Input" Id="input"></FluentTextArea>
+    </FluentGridItem>
+    <FluentGridItem xs="4">
+        <FluentGrid Spacing="3" Justify="JustifyContent.Center">
+            <FluentGridItem xs="3">
+                <h6>Split</h6>
+                <FluentRadioGroup Required="true" @bind-Value=_split Name="split" Orientation="Orientation.Vertical">
+                    <FluentRadio Value="@("\\n")" Checked="true">"\n"</FluentRadio>
+                    <FluentRadio Value="@("\\t")">"\t"</FluentRadio>
+                    <FluentRadio Value="@(" ")">" "</FluentRadio>
+                </FluentRadioGroup>
+            </FluentGridItem>
+            <FluentGridItem xs="3">
+                <p>Join</p>
+                <FluentRadioGroup Required="true" @bind-Value=_join Name="split" Orientation="Orientation.Vertical">
+                    <FluentRadio Value="@(",")">","</FluentRadio>
+                    <FluentRadio Value="@(", ")" Checked="true">", "</FluentRadio>
+                    <FluentRadio Value="@(",\\n")">",\n"</FluentRadio>
+                </FluentRadioGroup>
+            </FluentGridItem>
+            <FluentGridItem xs="3">
+                <p>Brackets</p>
+                <FluentButton @onclick="ClearBrackets" Appearance="Appearance.Lightweight" Style="width: 100%;">Clear</FluentButton>
+                <FluentRadioGroup @bind-Value="_brackets" Name="split" Orientation="Orientation.Vertical" Immediate="true">
+                    <FluentRadio Value="@("()")" Checked="true">(...)</FluentRadio>
+                    <FluentRadio Value="@("[]")">[...]</FluentRadio>
+                    <FluentRadio Value="@("{}")">{...}</FluentRadio>
+                </FluentRadioGroup>
+            </FluentGridItem>
+            <FluentGridItem xs="3">
+                <p>Parentheses</p>
+                <FluentButton @onclick="ClearParentheses" Appearance="Appearance.Lightweight" Style="width: 100%;">Clear</FluentButton>
+                <FluentRadioGroup Required="false" aria-labelledby="label1" @bind-Value=_parentheses Name="split" Orientation="Orientation.Vertical">
+                    <FluentRadio Value="@(@"""")">"..."</FluentRadio>
+                    <FluentRadio Value="@("''")" Checked="true">'...'</FluentRadio>
+                </FluentRadioGroup>
+                <FluentCheckbox @bind-Value="@_dynamic" Label="Dynamic"/>
+            </FluentGridItem>
+        </FluentGrid>
+        <FluentGrid Spacing="3" Justify="JustifyContent.SpaceEvenly">
+            <FluentGridItem xs="3">
+                <FluentTextField @bind-Value=_split Placeholder="Other" TextFieldType="TextFieldType.Text"></FluentTextField>
+            </FluentGridItem>
+            <FluentGridItem xs="3">
+                <FluentTextField @bind-Value=_join Placeholder="Other"></FluentTextField>
+            </FluentGridItem>
+            <FluentGridItem xs="3">
+                <FluentTextField @bind-Value=_brackets Placeholder="Other"></FluentTextField>
+            </FluentGridItem>
+            <FluentGridItem xs="3">
+                <FluentTextField @bind-Value=_parentheses Placeholder="Other"></FluentTextField>
+            </FluentGridItem>
+        </FluentGrid>
+        <FluentGrid Spacing="3" Justify="JustifyContent.Center">
+            <FluentGridItem xs="12" Justify="JustifyContent.Center">
+                <FluentButton @onclick="Transform" BackgroundColor="var(--warning)" Color="black" Style="width: 100%;">Transform</FluentButton>
+            </FluentGridItem>
+        </FluentGrid>
+        <FluentGrid Spacing="3" Justify="JustifyContent.Center">
+            <FluentGridItem xs="4">
+                <FluentButton @onclick="Entity" Appearance="Appearance.Accent" Style="width: 100%;">Db->Class</FluentButton>
+            </FluentGridItem>
+            <FluentGridItem xs="4">
+                <FluentButton @onclick="JsonToXML" Appearance="Appearance.Accent" Style="width: 100%;">JSON->XML</FluentButton>
+            </FluentGridItem>
+            <FluentGridItem xs="4">
+                <FluentButton @onclick="JsonToClass" Appearance="Appearance.Accent" Style="width: 100%;">JSON->Class</FluentButton>
+            </FluentGridItem>
+        </FluentGrid>
+        <FluentGrid Spacing="3" Justify="JustifyContent.Center">
+            <FluentGridItem xs="4">
+                <FluentButton @onclick="Transform" Appearance="Appearance.Accent" Style="width: 100%;">Transform</FluentButton>
+            </FluentGridItem>
+            <FluentGridItem xs="4">
+                <FluentButton @onclick="Transform" Appearance="Appearance.Accent" Style="width: 100%;">Transform</FluentButton>
+            </FluentGridItem>
+            <FluentGridItem xs="4">
+                <FluentButton @onclick="Transform" Appearance="Appearance.Accent" Style="width: 100%;">Transform</FluentButton>
+            </FluentGridItem>
+        </FluentGrid>
+        <FluentGrid Spacing="3" Justify="JustifyContent.Center">
+            <FluentGridItem xs="12" Justify="JustifyContent.Center">
+                <FluentButton @onclick="JavaScript" BackgroundColor="limeGreen" Color="black" Style="width: 100%;">JavaScript</FluentButton>
+            </FluentGridItem>
+        </FluentGrid>
+        <FluentGrid Spacing="3" Justify="JustifyContent.Center">
+            <FluentGridItem xs="12" Justify="JustifyContent.Center">
+                <FluentTextArea @bind-Value=_userCode style="width: 100%;" Rows="@(_rows / 2)" Placeholder="UserCode"></FluentTextArea>
+            </FluentGridItem>
+        </FluentGrid>
+    </FluentGridItem>
+    <FluentGridItem xs="4">
+        <FluentTextArea @bind-Value=_output style="width: 100%;" Rows="@_rows" Placeholder="Output" Id="output"></FluentTextArea>
+    </FluentGridItem>
+</FluentGrid>
+<script>
+    function runUserScript(userCode) {
+        eval(userCode);
+    }
+    window.getDimensions = function () {
+        return window.innerHeight;
+    };
+</script>
