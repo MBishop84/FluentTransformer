@@ -63,6 +63,7 @@
                 <FluentButton @onclick="Transform" BackgroundColor="whitesmoke" Color="black" Style="width: 30%;">Transform</FluentButton>
             </FluentGridItem>
         </FluentGrid>
+        <hr />
         <FluentGrid Spacing="3" Justify="JustifyContent.Center">
             <FluentGridItem xs="4">
                 <FluentButton @onclick="Entity" Appearance="Appearance.Accent" Style="width: 100%;">Db->Class</FluentButton>
@@ -76,15 +77,16 @@
         </FluentGrid>
         <FluentGrid Spacing="3" Justify="JustifyContent.Center">
             <FluentGridItem xs="4">
-                <FluentButton @onclick="Transform" Appearance="Appearance.Accent" Style="width: 100%;">Transform</FluentButton>
+                <FluentButton @onclick="RowToJson" Appearance="Appearance.Accent" Style="width: 100%;">Row->JSON</FluentButton>
             </FluentGridItem>
             <FluentGridItem xs="4">
-                <FluentButton @onclick="Transform" Appearance="Appearance.Accent" Style="width: 100%;">Transform</FluentButton>
+                <FluentButton @onclick="Schema" Appearance="Appearance.Accent" Style="width: 100%;">Cols->Schema</FluentButton>
             </FluentGridItem>
             <FluentGridItem xs="4">
                 <FluentButton @onclick="Clear" BackgroundColor="salmon" Color="black" Style="width: 100%;">Clear</FluentButton>
             </FluentGridItem>
         </FluentGrid>
+        <hr />
         <FluentGrid Spacing="3" Justify="JustifyContent.Center">
             <FluentGridItem xs="12" Justify="JustifyContent.Center">
                 <FluentButton @onclick="JavaScript" BackgroundColor="palegreen" Color="black" Style="width: 30%;">JavaScript</FluentButton>

@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System.Globalization;
 using System.Text;
 using System.Xml;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FluentTransformer.Components.Pages
 {
@@ -98,7 +99,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
                 var userBox = "const input = document.getElementById('input').value;\nlet output = '';\n[***]\ndocument.getElementById('output').value = output;";
                 if (string.IsNullOrEmpty(_userCode))
                 {
-                    _userCode = @"output = input.split('\n').map(x => x.length >= 5 ? `Hello ${x}` : `GoodBye ${x}`).join(',\n');";
+                    _userCode = "//Converter Example\noutput = input.split('\\t').map(x => `${x} = source.${x}` ).join(',\\n');";
                 }
                 else
                 {
@@ -229,6 +230,60 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
             }
         }
 
+        private void RowToJson()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(_input))
+                {
+                    throw new ArgumentException("Expected Format:\nColumn\\tColumn...\nValue\\tValue...");
+                }
+                var cols = _input.Split("\n")[0].Split("\t");
+                var values = _input.Split("\n")[1].Split("\t");
+                var result = new StringBuilder();
+
+                for (var x = 0; x < cols.Length; x++)
+                {
+                    result.AppendFormat(values[x] switch
+                    {
+                        var a when int.TryParse(a, out int ignored) => "\t\"{0}\": {1},\n",
+                        var b when b.Equals("NULL", StringComparison.OrdinalIgnoreCase) => "\t\"{0}\": \"\",\n",
+                        var c when string.IsNullOrEmpty(c) => "\t\"{0}\": \"\",\n",
+                        _ => "\t\"{0}\": \"{1}\",\n"
+                    }, Char.ToLowerInvariant(cols[x][0]) + cols[x][1..], values[x]);
+                }
+                result.Length -= 2;
+
+                _output = $"{{\n{result}\n}}";
+            }
+            catch(IndexOutOfRangeException ex)
+            {
+                _output = "Invalid input format:\nExpected:\nColumn\\tColumn...\nValue\\tValue...";
+            }
+            catch (Exception ex)
+            {
+                _output = ex.Message;
+            }
+        }
+
+        private void Schema()
+        {
+            try
+            {
+                if(string.IsNullOrEmpty(_input))
+                {
+                    throw new ArgumentException("Expected Format:\nColumn\nColumn\nColumn\nColumn...");
+                }
+                _output = string.Join("\n\n", _input.Split('\n').Select(x =>
+                {
+                    return $"builder.Property(p => p.{x}).HasColumnName(\"{x}\");";
+                }));
+            }
+            catch (Exception ex)
+            {
+                _output = ex.Message;
+            }
+        }
         #endregion Private Methods
     }
 }

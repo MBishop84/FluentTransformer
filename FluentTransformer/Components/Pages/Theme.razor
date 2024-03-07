@@ -1,21 +1,27 @@
 ﻿@page "/theme"
-
+@using Enums
 <PageTitle>Home</PageTitle>
-<FluentDesignTheme Mode="@Mode"
-                   OfficeColor="@OfficeColor"
-                   StorageName="customTheme" />
+<FluentDesignTheme @bind-Mode=Mode
+                   @bind-CustomColor=customAccent
+                   StorageName="theme" />
 
 <FluentSelect Label="Theme"
               Width="250px"
               Items="@(Enum.GetValues<DesignThemeModes>())"
-              @bind-SelectedOption="@Mode" />
+              @bind-SelectedOption=Mode />
 
-<FluentSelect Label="Color"
+<FluentSelect Label="Accent"
               Width="250px"
-              Items="@(Enum.GetValues<OfficeColor>())"
-              @bind-SelectedOption="@OfficeColor" />
+              Items="@(Enum.GetNames<Colors>())"
+              @bind-SelectedOption="@customAccent" />
 
 @code {
-    public DesignThemeModes Mode { get; set; } = DesignThemeModes.System;
+    public DesignThemeModes Mode { get; set; } = DesignThemeModes.Dark;
     public OfficeColor OfficeColor { get; set; } = OfficeColor.Windows;
+    public string customAccent { get; set; } = "crimson";
+
+    void OnLuminanceChanged(LuminanceChangedEventArgs e)
+    {
+        Console.WriteLine($"Changed: {(e.Mode == DesignThemeModes.System ? "System" : "")} {(e.IsDark ? "Dark" : "Light")}");
+    }
 }
