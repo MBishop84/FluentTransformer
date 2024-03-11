@@ -1,0 +1,10 @@
+[
+  {
+    "Name": "//Converter",
+    "Code": "output = input.split('\\t').map(x => `${x} = source.${x}`).join(',\\n')"
+  },
+  {
+    "Name": "//Converter2",
+    "Code": "output = input.split('\\t').map(y => y.replace('ID', 'Id')).map(x => `${x} = source.${x}`).join(',\\n')"
+  }
+]

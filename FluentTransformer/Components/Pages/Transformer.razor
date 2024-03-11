@@ -41,7 +41,7 @@
                     <FluentRadio Value="@(@"""")">"..."</FluentRadio>
                     <FluentRadio Value="@("''")" Checked="true">'...'</FluentRadio>
                 </FluentRadioGroup>
-                <FluentCheckbox @bind-Value="@_dynamic" Label="Dynamic"/>
+                <FluentCheckbox @bind-Value="@_dynamic" Label="Dynamic" />
             </FluentGridItem>
         </FluentGrid>
         <FluentGrid Spacing="3" Justify="JustifyContent.SpaceEvenly">
@@ -88,13 +88,38 @@
         </FluentGrid>
         <hr />
         <FluentGrid Spacing="3" Justify="JustifyContent.Center">
-            <FluentGridItem xs="12" Justify="JustifyContent.Center">
-                <FluentButton @onclick="JavaScript" BackgroundColor="palegreen" Color="black" Style="width: 30%;">JavaScript</FluentButton>
+            <FluentGridItem xs="4">
+                <FluentSelect Items=@_snippets
+                              OptionText="@(i => i.Name.Substring(2))"
+                              OptionValue="@(i => $"{i.Name}\n{i.Code}")"
+                              Width="100%"
+                              @bind-Value="@_userCode" />
+            </FluentGridItem>
+            <FluentGridItem xs="4" Justify="JustifyContent.Center">
+                <FluentButton @onclick="PreviousJs"
+                              Style="width: 48%"
+                              Appearance="Appearance.Lightweight"
+                              IconStart="@(new Icons.Regular.Size16.ArrowCircleLeft())">Last</FluentButton>
+                <FluentButton @onclick="NextJs"
+                              Style="width: 48%"
+                              Appearance="Appearance.Lightweight"
+                              IconEnd="@(new Icons.Regular.Size16.ArrowCircleRight())">Next</FluentButton>
+            </FluentGridItem>
+            <FluentGridItem xs="4">
+                <FluentButton @onclick="SaveJs"
+                              Appearance="Appearance.Outline"
+                              IconStart="@(new Icons.Regular.Size16.Save())"
+                              Style="width: 100%;">Save</FluentButton>
+            </FluentGridItem>
+        </FluentGrid>
+        <FluentGrid Spacing="3" >
+            <FluentGridItem xs="12" Justify="JustifyContent.FlexEnd">
+                <FluentButton @onclick="JavaScript" BackgroundColor="palegreen" Color="black" Style="width: 30%;">Run JS</FluentButton>
             </FluentGridItem>
         </FluentGrid>
         <FluentGrid Spacing="3" Justify="JustifyContent.Center">
             <FluentGridItem xs="12" Justify="JustifyContent.Center">
-                <FluentTextArea @bind-Value=_userCode style="width: 100%;" Rows="@(_rows / 2)" Placeholder="UserCode"></FluentTextArea>
+                <FluentTextArea @bind-Value=_userCode style="width: 100%;" Rows="@((int?)Math.Round(_rows * 0.3))" Placeholder="UserCode"></FluentTextArea>
             </FluentGridItem>
         </FluentGrid>
     </FluentGridItem>

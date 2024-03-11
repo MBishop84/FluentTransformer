@@ -44,11 +44,11 @@ footer {
 }
 
     footer .link1 {
-        grid-column: 2;
+        grid-column:2;
         justify-content: start;
     }
 
-    footer .link2 {
+    footer .link3 {
         grid-column: 3;
         justify-self: end;
     }

@@ -4,7 +4,6 @@ using Newtonsoft.Json;
 using System.Globalization;
 using System.Text;
 using System.Xml;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FluentTransformer.Components.Pages
 {
@@ -13,9 +12,13 @@ namespace FluentTransformer.Components.Pages
         #region Private Fields
         [Inject]
         private IJSRuntime JsRuntime { get; set; }
+        private sealed record UserSnippet(string Name, string Code);
+
         private string? _input, _output, _split = "\\n", _join = ", ", _brackets = "()", _parentheses = "''", _userCode;
         private bool _dynamic = true;
         private int _rows = 40;
+        private List<UserSnippet> _snippets = [];
+        private readonly string snippetFile = "Data/JsSnippets.json";
         private readonly string entityQuery = @"
 SELECT 
     TableName = tbl.table_schema + '.' + tbl.table_name, 
@@ -33,10 +36,39 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
 
         #region Constructors
 
+        protected override async Task OnInitializedAsync()
+        {
+            try
+            {
+                string json = await File.ReadAllTextAsync(snippetFile);
+                if (string.IsNullOrEmpty(json))
+                {
+                    using StreamWriter outputFile = new(snippetFile, false);
+                    await outputFile.WriteLineAsync(JsonConvert.SerializeObject(new List<UserSnippet>
+                    {
+                        new("//Converter", "output = input.split('\\t').map(x => `${x} = source.${x}`).join(',\\n')")
+                    }));
+                }
+                _snippets = JsonConvert.DeserializeObject<UserSnippet[]>(json)?.ToList()!;
+            }
+            catch (Exception ex)
+            {
+                _output = ex.Message;
+            }
+        }
+
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
-            var envHeight = await JsRuntime.InvokeAsync<int>("getDimensions");
-            _rows = envHeight / 23;
+            try
+            {
+                var envHeight = await JsRuntime.InvokeAsync<int>("getDimensions");
+                _rows = envHeight / 24;
+                
+            }
+            catch (Exception ex)
+            {
+                _output = ex.Message;
+            }
         }
 
         #endregion Constructors
@@ -59,7 +91,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
                 }
                 var split = _split?.Replace("\\n", "\n").Replace("\\t", "\t") ?? string.Empty;
                 var join = _join?.Replace("\\n", "\n").Replace("\\t", "\t") ?? string.Empty;
-                
+
                 var frontBracket = string.IsNullOrEmpty(_brackets)
                     ? string.Empty
                     : _brackets[0].ToString();
@@ -89,7 +121,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
             }
         }
 
-        private void ClearBrackets() =>_brackets = string.Empty;
+        private void ClearBrackets() => _brackets = string.Empty;
         private void ClearParentheses() => _parentheses = string.Empty;
 
         private async Task JavaScript()
@@ -99,11 +131,86 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
                 var userBox = "const input = document.getElementById('input').value;\nlet output = '';\n[***]\ndocument.getElementById('output').value = output;";
                 if (string.IsNullOrEmpty(_userCode))
                 {
-                    _userCode = "//Converter Example\noutput = input.split('\\t').map(x => `${x} = source.${x}` ).join(',\\n');";
+                    _userCode = $"{_snippets.Select(x => $"{x.Name}\n{x.Code}").FirstOrDefault()}";
                 }
                 else
                 {
                     await JsRuntime.InvokeAsync<string>("runUserScript", userBox.Replace("[***]", _userCode));
+                }
+            }
+            catch (Exception ex)
+            {
+                _output = ex.Message;
+            }
+        }
+
+        private async Task SaveJs()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(_userCode))
+                    throw new ArgumentException("No code to save.");
+                var userSnippet = _userCode.Split("\n");
+                if (userSnippet.Length < 2)
+                    throw new ArgumentException("Please include a name for your script.");
+
+                if(!userSnippet[0].StartsWith("//"))
+                    userSnippet[0] = $"//{userSnippet[0]}";
+
+                if (userSnippet.Length > 2)
+                    userSnippet[1] = string.Join("", userSnippet[1..]);
+
+                if (_snippets.Exists(x => x.Name == userSnippet[0]))
+                    _snippets.Remove(_snippets.First(x => x.Name == userSnippet[0]));
+
+                _snippets.Add(new UserSnippet(userSnippet[0], userSnippet[1]));
+                using StreamWriter outputFile = new(snippetFile, false);
+                await outputFile.WriteLineAsync(JsonConvert.SerializeObject(_snippets));
+            }
+            catch (Exception ex)
+            {
+                _output = ex.Message;
+            }
+        }
+
+        private void NextJs()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(_userCode))
+                    _userCode = $"{_snippets[0].Name}\n{_snippets[0].Code}";
+                else
+                {
+                    var index = _snippets.FindIndex(x => x.Name == _userCode.Split("\n")[0]);
+                    if (index < _snippets.Count - 1)
+                    {
+                        _userCode = $"{_snippets[index + 1].Name}\n{_snippets[index + 1].Code}";
+                    }
+                    else
+                        _userCode = $"{_snippets[0].Name}\n{_snippets[0].Code}";
+                }
+            }
+            catch (Exception ex)
+            {
+                _output = ex.Message;
+            }
+        }
+
+        private void PreviousJs()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(_userCode))
+                    _userCode = $"{_snippets[0].Name}\n{_snippets[0].Code}";
+                else
+                {
+                    var index = _snippets.FindIndex(x => x.Name == _userCode.Split("\n")[0]);
+                    if (index > 0)
+                    {
+                        _userCode = $"{_snippets[index - 1].Name}\n{_snippets[index - 1].Code}";
+                    }
+                    else
+                        _userCode = $"{_snippets[^1].Name}\n{_snippets[^1].Code}";
                 }
             }
             catch (Exception ex)
@@ -162,7 +269,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
                                 result.Append($"Insufficient arguments.\n\n");
                                 break;
                             case 2:
-                                properties[0] = properties[0].Replace("LOB", "LineOfBusiness").Replace("ID", "Id").Replace("Num", "Number").Replace("Agt", "Agent").Replace("Trans", "Transaction");
+                                properties[0] = properties[0].Replace("LOB", "LineOfBusiness").Replace("ID", "Id").Replace("Agt", "Agent").Replace("Trans", "Transaction");
                                 result.Append(properties[1] switch
                                 {
                                     var a when a.Contains("int", StringComparison.OrdinalIgnoreCase) =>
@@ -178,7 +285,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
                                 break;
                             case 3:
                                 string isNullable = properties[2].Equals("YES", StringComparison.OrdinalIgnoreCase) ? "?" : "";
-                                properties[0] = properties[0].Replace("LOB", "LineOfBusiness").Replace("ID", "Id").Replace("Num", "Number").Replace("Agt", "Agent").Replace("Trans", "Transaction");
+                                properties[0] = properties[0].Replace("LOB", "LineOfBusiness").Replace("ID", "Id").Replace("Agt", "Agent").Replace("Trans", "Transaction");
                                 result.Append(properties[1] switch
                                 {
                                     var a when a.Contains("int", StringComparison.OrdinalIgnoreCase) =>
@@ -213,9 +320,15 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
         {
             try
             {
+                if (string.IsNullOrEmpty(_input))
+                    throw new ArgumentException("Expected Format:\n{\"Key\":\"Value\"}\n{\"Key\":\"Value\"}");
+
+                var brackets = _input.StartsWith('{') && _input.EndsWith('}')
+                    ? [string.Empty, string.Empty]
+                    : new[] { "{", "}" };
+
                 var doc = JsonConvert.DeserializeXmlNode(
-                    @"{'DefaultRoot':{" + $"{_input}}}}}"
-                    );
+                    $"{{\"DefaultRoot\":{brackets[0]}" + $"{_input}{brackets[1]}}}");
                 var sw = new StringWriter();
                 var writer = new XmlTextWriter(sw)
                 {
@@ -226,7 +339,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
             }
             catch (Exception ex)
             {
-                _output = ex.Message;
+                _output = $"{ex.Message}\nExpected Format:\n\"Key\":\"Value\",\n\"Key\":\"Value\"";
             }
         }
 
@@ -256,7 +369,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
 
                 _output = $"{{\n{result}\n}}";
             }
-            catch(IndexOutOfRangeException ex)
+            catch (IndexOutOfRangeException ex)
             {
                 _output = "Invalid input format:\nExpected:\nColumn\\tColumn...\nValue\\tValue...";
             }
@@ -270,7 +383,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
         {
             try
             {
-                if(string.IsNullOrEmpty(_input))
+                if (string.IsNullOrEmpty(_input))
                 {
                     throw new ArgumentException("Expected Format:\nColumn\nColumn\nColumn\nColumn...");
                 }
