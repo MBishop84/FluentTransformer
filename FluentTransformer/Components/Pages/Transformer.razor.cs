@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.FluentUI.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Newtonsoft.Json;
 using System.Globalization;
@@ -15,6 +16,7 @@ namespace FluentTransformer.Components.Pages
         private sealed record UserSnippet(string Name, string Code);
 
         private string? _input, _output, _split = "\\n", _join = ", ", _brackets = "()", _parentheses = "''", _userCode;
+        private string userCode;
         private bool _dynamic = true;
         private int _rows = 40;
         private List<UserSnippet> _snippets = [];
@@ -218,6 +220,9 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
                 _output = ex.Message;
             }
         }
+
+        private void UpdateUserCode(string userSnippet) => 
+            _userCode = userSnippet;
 
         private void JsonToClass()
         {

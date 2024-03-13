@@ -92,8 +92,8 @@
                 <FluentSelect Items=@_snippets
                               OptionText="@(i => i.Name.Substring(2))"
                               OptionValue="@(i => $"{i.Name}\n{i.Code}")"
-                              Width="100%"
-                              @bind-Value="@_userCode" />
+                              ValueChanged="@(x => UpdateUserCode(x))"
+                              Width="100%" />
             </FluentGridItem>
             <FluentGridItem xs="4" Justify="JustifyContent.Center">
                 <FluentButton @onclick="PreviousJs"
