@@ -1,4 +1,6 @@
 ﻿@inherits LayoutComponentBase
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+
 <FluentLayout >
     <FluentHeader>
         FluentTransformer
@@ -10,6 +12,7 @@
                 @Body
             </div>
         </FluentBodyContent>
+        <FluentDialogProvider @rendermode="InteractiveServer" />
     </FluentStack>
     <FluentFooter>
         <div class="link1">

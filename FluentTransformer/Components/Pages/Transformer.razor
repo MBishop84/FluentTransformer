@@ -1,5 +1,7 @@
 ﻿@page "/"
+@using Microsoft.Extensions.Hosting
 @rendermode InteractiveServer
+@inject IHostEnvironment HostEnvironment
 
 <PageTitle>Transformer</PageTitle>
 
@@ -38,7 +40,7 @@
                 <p>Parentheses</p>
                 <FluentButton @onclick="ClearParentheses" Appearance="Appearance.Lightweight" Style="width: 100%;">Clear</FluentButton>
                 <FluentRadioGroup Required="false" aria-labelledby="label1" @bind-Value=_parentheses Name="split" Orientation="Orientation.Vertical">
-                    <FluentRadio Value="@(@"""")">"..."</FluentRadio>
+                    <FluentRadio Value="@(@"""""")">"..."</FluentRadio>
                     <FluentRadio Value="@("''")" Checked="true">'...'</FluentRadio>
                 </FluentRadioGroup>
                 <FluentCheckbox @bind-Value="@_dynamic" Label="Dynamic" />
@@ -106,13 +108,16 @@
                               IconEnd="@(new Icons.Regular.Size16.ArrowCircleRight())">Next</FluentButton>
             </FluentGridItem>
             <FluentGridItem xs="4">
-                <FluentButton @onclick="SaveJs"
-                              Appearance="Appearance.Outline"
-                              IconStart="@(new Icons.Regular.Size16.Save())"
-                              Style="width: 100%;">Save</FluentButton>
+                @if (HostEnvironment.IsDevelopment())
+                {
+                    <FluentButton @onclick="SaveJs"
+                                  Appearance="Appearance.Outline"
+                                  IconStart="@(new Icons.Regular.Size16.Save())"
+                                  Style="width: 100%;">Save</FluentButton>
+                }
             </FluentGridItem>
         </FluentGrid>
-        <FluentGrid Spacing="3" >
+        <FluentGrid Spacing="3">
             <FluentGridItem xs="12" Justify="JustifyContent.FlexEnd">
                 <FluentButton @onclick="JavaScript" BackgroundColor="palegreen" Color="black" Style="width: 30%;">Run JS</FluentButton>
             </FluentGridItem>
@@ -122,6 +127,18 @@
                 <FluentTextArea @bind-Value=_userCode style="width: 100%;" Rows="@((int?)Math.Round(_rows * 0.3))" Placeholder="UserCode"></FluentTextArea>
             </FluentGridItem>
         </FluentGrid>
+        <br />
+        <FluentGridItem xs="12" Justify="JustifyContent.Center">
+            @if (HostEnvironment.IsDevelopment())
+            {
+                <FluentButton @onclick="DeleteJs"
+                              Appearance="Appearance.Outline"
+                              Style="width: 30%;">
+                    <FluentIcon Value="@(new Icons.Regular.Size16.Delete())" Color="Color.Error" Slot="start" />
+                    Delete
+                </FluentButton>
+            }
+        </FluentGridItem>
     </FluentGridItem>
     <FluentGridItem xs="4">
         <FluentTextArea @bind-Value=_output style="width: 100%;" Rows="@_rows" Placeholder="Output" Id="output"></FluentTextArea>

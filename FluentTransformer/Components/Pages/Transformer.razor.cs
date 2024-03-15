@@ -13,10 +13,11 @@ namespace FluentTransformer.Components.Pages
         #region Private Fields
         [Inject]
         private IJSRuntime JsRuntime { get; set; }
+        [Inject]
+        private IDialogService DialogService { get; set; }
         private sealed record UserSnippet(string Name, string Code);
 
         private string? _input, _output, _split = "\\n", _join = ", ", _brackets = "()", _parentheses = "''", _userCode;
-        private string userCode;
         private bool _dynamic = true;
         private int _rows = 40;
         private List<UserSnippet> _snippets = [];
@@ -55,7 +56,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
             }
             catch (Exception ex)
             {
-                _output = ex.Message;
+                await DialogService.ShowErrorAsync(ex.Message);
             }
         }
 
@@ -65,11 +66,11 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
             {
                 var envHeight = await JsRuntime.InvokeAsync<int>("getDimensions");
                 _rows = envHeight / 24;
-                
+
             }
             catch (Exception ex)
             {
-                _output = ex.Message;
+                await DialogService.ShowErrorAsync(ex.Message);
             }
         }
 
@@ -79,7 +80,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
 
         private void Clear() => _input = _output = string.Empty;
 
-        private void Transform()
+        private async Task Transform()
         {
             try
             {
@@ -119,7 +120,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
             }
             catch (Exception ex)
             {
-                _output = ex.Message;
+                await DialogService.ShowErrorAsync(ex.Message);
             }
         }
 
@@ -142,7 +143,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
             }
             catch (Exception ex)
             {
-                _output = ex.Message;
+                await DialogService.ShowErrorAsync(ex.Message);
             }
         }
 
@@ -156,7 +157,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
                 if (userSnippet.Length < 2)
                     throw new ArgumentException("Please include a name for your script.");
 
-                if(!userSnippet[0].StartsWith("//"))
+                if (!userSnippet[0].StartsWith("//"))
                     userSnippet[0] = $"//{userSnippet[0]}";
 
                 if (userSnippet.Length > 2)
@@ -168,14 +169,54 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
                 _snippets.Add(new UserSnippet(userSnippet[0], userSnippet[1]));
                 using StreamWriter outputFile = new(snippetFile, false);
                 await outputFile.WriteLineAsync(JsonConvert.SerializeObject(_snippets));
+                await DialogService.ShowSuccessAsync("Your Transform has been saved!");
             }
             catch (Exception ex)
             {
-                _output = ex.Message;
+                await DialogService.ShowErrorAsync(ex.Message);
             }
         }
 
-        private void NextJs()
+        private async Task DeleteJs()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(_userCode))
+                {
+                    await DialogService.ShowErrorAsync("Please select a transform to delete.");
+                    return;
+                }
+                var userSnippet = _userCode.Split("\n");
+
+                if (!userSnippet[0].StartsWith("//"))
+                    userSnippet[0] = $"//{userSnippet[0]}";
+
+                if (!_snippets.Exists(x => x.Name == userSnippet[0]))
+                {
+                    await DialogService.ShowErrorAsync("No user transform found with that name!");
+                    return;
+                }
+
+                var dialog = await DialogService.ShowConfirmationAsync(
+                    $"Are you sure you want to permanently delete User Transform {userSnippet[0].Replace("//", "")}?");
+                var result = await dialog.Result;
+                if (result.Cancelled)
+                    return;
+
+                _snippets.Remove(_snippets.First(x => x.Name == userSnippet[0]));
+
+                using StreamWriter outputFile = new(snippetFile, false);
+                await outputFile.WriteAsync(JsonConvert.SerializeObject(_snippets));
+                await DialogService.ShowSuccessAsync("Your Transform has been deleted!");
+                _userCode = string.Empty;
+            }
+            catch (Exception ex)
+            {
+                await DialogService.ShowErrorAsync(ex.Message);
+            }
+        }
+
+        private async Task NextJs()
         {
             try
             {
@@ -194,11 +235,11 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
             }
             catch (Exception ex)
             {
-                _output = ex.Message;
+                await DialogService.ShowErrorAsync(ex.Message);
             }
         }
 
-        private void PreviousJs()
+        private async Task PreviousJs()
         {
             try
             {
@@ -217,14 +258,14 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
             }
             catch (Exception ex)
             {
-                _output = ex.Message;
+                await DialogService.ShowErrorAsync(ex.Message);
             }
         }
 
-        private void UpdateUserCode(string userSnippet) => 
+        private void UpdateUserCode(string userSnippet) =>
             _userCode = userSnippet;
 
-        private void JsonToClass()
+        private async Task JsonToClass()
         {
             try
             {
@@ -251,77 +292,75 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
             }
             catch (Exception ex)
             {
-                _output = ex.Message;
+                await DialogService.ShowErrorAsync(ex.Message);
             }
         }
 
-        private void Entity()
+        private async Task Entity()
         {
-            if (!string.IsNullOrEmpty(_input))
-            {
-                try
-                {
-                    var lines = _input?.Split("\n") ?? [];
-                    var result = new StringBuilder();
-
-                    foreach (var line in lines)
-                    {
-                        var properties = line.Split("\t");
-                        result.AppendFormat("///<summary>\n/// Gets/Sets the {0}.\n///</summary>\n", properties[0]);
-                        switch (properties.Length)
-                        {
-                            case 1:
-                                result.Append($"Insufficient arguments.\n\n");
-                                break;
-                            case 2:
-                                properties[0] = properties[0].Replace("LOB", "LineOfBusiness").Replace("ID", "Id").Replace("Agt", "Agent").Replace("Trans", "Transaction");
-                                result.Append(properties[1] switch
-                                {
-                                    var a when a.Contains("int", StringComparison.OrdinalIgnoreCase) =>
-                                        $"public int {properties[0]} {{ get; set; }}\n\n",
-                                    var b when b.Contains("date", StringComparison.OrdinalIgnoreCase) =>
-                                        $"public DateTime {properties[0]} {{ get; set; }}\n\n",
-                                    var b when b.Contains("bit", StringComparison.OrdinalIgnoreCase) =>
-                                        $"public bool {properties[0]} {{ get; set; }}\n\n",
-                                    var b when b.Contains("unique", StringComparison.OrdinalIgnoreCase) =>
-                                        $"public Guid {properties[0]} {{ get; set; }}\n\n",
-                                    _ => $"public string {properties[0]} {{ get; set; }}\n\n"
-                                });
-                                break;
-                            case 3:
-                                string isNullable = properties[2].Equals("YES", StringComparison.OrdinalIgnoreCase) ? "?" : "";
-                                properties[0] = properties[0].Replace("LOB", "LineOfBusiness").Replace("ID", "Id").Replace("Agt", "Agent").Replace("Trans", "Transaction");
-                                result.Append(properties[1] switch
-                                {
-                                    var a when a.Contains("int", StringComparison.OrdinalIgnoreCase) =>
-                                        $"public int{isNullable} {properties[0]} {{ get; set; }}\n\n",
-                                    var b when b.Contains("date", StringComparison.OrdinalIgnoreCase) =>
-                                        $"public DateTime{isNullable} {properties[0]} {{ get; set; }}\n\n",
-                                    var b when b.Contains("bit", StringComparison.OrdinalIgnoreCase) =>
-                                        $"public bool{isNullable} {properties[0]} {{ get; set; }}\n\n",
-                                    var b when b.Contains("unique", StringComparison.OrdinalIgnoreCase) =>
-                                        $"public Guid{isNullable} {properties[0]} {{ get; set; }}\n\n",
-                                    _ => $"public string {properties[0]} {{ get; set; }}\n\n"
-                                });
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                    _output = result.ToString();
-                }
-                catch (Exception ex)
-                {
-                    _output = ex.Message;
-                }
-            }
-            else
+            if (string.IsNullOrEmpty(_input))
             {
                 _output = entityQuery;
+                return;
+            }
+            try
+            {
+                var lines = _input?.Split("\n") ?? [];
+                var result = new StringBuilder();
+
+                foreach (var line in lines)
+                {
+                    var properties = line.Split("\t");
+                    result.AppendFormat("///<summary>\n/// Gets/Sets the {0}.\n///</summary>\n", properties[0]);
+                    switch (properties.Length)
+                    {
+                        case 1:
+                            result.Append($"Insufficient arguments.\n\n");
+                            break;
+                        case 2:
+                            properties[0] = properties[0].Replace("LOB", "LineOfBusiness").Replace("ID", "Id").Replace("Agt", "Agent").Replace("Trans", "Transaction");
+                            result.Append(properties[1] switch
+                            {
+                                var a when a.Contains("int", StringComparison.OrdinalIgnoreCase) =>
+                                    $"public int {properties[0]} {{ get; set; }}\n\n",
+                                var b when b.Contains("date", StringComparison.OrdinalIgnoreCase) =>
+                                    $"public DateTime {properties[0]} {{ get; set; }}\n\n",
+                                var b when b.Contains("bit", StringComparison.OrdinalIgnoreCase) =>
+                                    $"public bool {properties[0]} {{ get; set; }}\n\n",
+                                var b when b.Contains("unique", StringComparison.OrdinalIgnoreCase) =>
+                                    $"public Guid {properties[0]} {{ get; set; }}\n\n",
+                                _ => $"public string {properties[0]} {{ get; set; }}\n\n"
+                            });
+                            break;
+                        case 3:
+                            string isNullable = properties[2].Equals("YES", StringComparison.OrdinalIgnoreCase) ? "?" : "";
+                            properties[0] = properties[0].Replace("LOB", "LineOfBusiness").Replace("ID", "Id").Replace("Agt", "Agent").Replace("Trans", "Transaction");
+                            result.Append(properties[1] switch
+                            {
+                                var a when a.Contains("int", StringComparison.OrdinalIgnoreCase) =>
+                                    $"public int{isNullable} {properties[0]} {{ get; set; }}\n\n",
+                                var b when b.Contains("date", StringComparison.OrdinalIgnoreCase) =>
+                                    $"public DateTime{isNullable} {properties[0]} {{ get; set; }}\n\n",
+                                var b when b.Contains("bit", StringComparison.OrdinalIgnoreCase) =>
+                                    $"public bool{isNullable} {properties[0]} {{ get; set; }}\n\n",
+                                var b when b.Contains("unique", StringComparison.OrdinalIgnoreCase) =>
+                                    $"public Guid{isNullable} {properties[0]} {{ get; set; }}\n\n",
+                                _ => $"public string {properties[0]} {{ get; set; }}\n\n"
+                            });
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                _output = result.ToString();
+            }
+            catch (Exception ex)
+            {
+                await DialogService.ShowErrorAsync(ex.Message);
             }
         }
 
-        private void JsonToXML()
+        private async Task JsonToXML()
         {
             try
             {
@@ -344,11 +383,11 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
             }
             catch (Exception ex)
             {
-                _output = $"{ex.Message}\nExpected Format:\n\"Key\":\"Value\",\n\"Key\":\"Value\"";
+                await DialogService.ShowErrorAsync(ex.Message);
             }
         }
 
-        private void RowToJson()
+        private async Task RowToJson()
         {
             try
             {
@@ -368,7 +407,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
                         var b when b.Equals("NULL", StringComparison.OrdinalIgnoreCase) => "\t\"{0}\": \"\",\n",
                         var c when string.IsNullOrEmpty(c) => "\t\"{0}\": \"\",\n",
                         _ => "\t\"{0}\": \"{1}\",\n"
-                    }, Char.ToLowerInvariant(cols[x][0]) + cols[x][1..], values[x]);
+                    }, char.ToLowerInvariant(cols[x][0]) + cols[x][1..], values[x]);
                 }
                 result.Length -= 2;
 
@@ -380,11 +419,11 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
             }
             catch (Exception ex)
             {
-                _output = ex.Message;
+                await DialogService.ShowErrorAsync(ex.Message);
             }
         }
 
-        private void Schema()
+        private async Task Schema()
         {
             try
             {
@@ -399,7 +438,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
             }
             catch (Exception ex)
             {
-                _output = ex.Message;
+                await DialogService.ShowErrorAsync(ex.Message);
             }
         }
         #endregion Private Methods
