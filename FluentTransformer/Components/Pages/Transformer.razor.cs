@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using BlazorMonaco.Editor;
+using Microsoft.AspNetCore.Components;
 using Microsoft.FluentUI.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Newtonsoft.Json;
@@ -16,6 +17,7 @@ namespace FluentTransformer.Components.Pages
         [Inject]
         private IDialogService DialogService { get; set; }
         private sealed record UserSnippet(string Name, string Code);
+        StandaloneCodeEditor _editor { get; set; }
 
         private string? _input, _output, _split = "\\n", _join = ", ", _brackets = "()", _parentheses = "''", _userCode;
         private bool _dynamic = true;
@@ -131,6 +133,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
         {
             try
             {
+                _userCode = await _editor.GetValue();
                 var userBox = "const input = document.getElementById('input').value;\nlet output = '';\n[***]\ndocument.getElementById('output').value = output;";
                 if (string.IsNullOrEmpty(_userCode))
                 {
@@ -151,6 +154,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
         {
             try
             {
+                _userCode = await _editor.GetValue();
                 if (string.IsNullOrEmpty(_userCode))
                     throw new ArgumentException("No code to save.");
                 var userSnippet = _userCode.Split("\n");
@@ -161,7 +165,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
                     userSnippet[0] = $"//{userSnippet[0]}";
 
                 if (userSnippet.Length > 2)
-                    userSnippet[1] = string.Join("", userSnippet[1..]);
+                    userSnippet[1] = string.Join("\n", userSnippet[1..]);
 
                 if (_snippets.Exists(x => x.Name == userSnippet[0]))
                     _snippets.Remove(_snippets.First(x => x.Name == userSnippet[0]));
@@ -181,6 +185,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
         {
             try
             {
+                _userCode = await _editor.GetValue();
                 if (string.IsNullOrEmpty(_userCode))
                 {
                     await DialogService.ShowErrorAsync("Please select a transform to delete.");
@@ -220,6 +225,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
         {
             try
             {
+                _userCode = await _editor.GetValue();
                 if (string.IsNullOrEmpty(_userCode))
                     _userCode = $"{_snippets[0].Name}\n{_snippets[0].Code}";
                 else
@@ -232,6 +238,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
                     else
                         _userCode = $"{_snippets[0].Name}\n{_snippets[0].Code}";
                 }
+                await _editor.SetValue(_userCode);
             }
             catch (Exception ex)
             {
@@ -243,6 +250,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
         {
             try
             {
+                _userCode = await _editor.GetValue();
                 if (string.IsNullOrEmpty(_userCode))
                     _userCode = $"{_snippets[0].Name}\n{_snippets[0].Code}";
                 else
@@ -255,6 +263,7 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
                     else
                         _userCode = $"{_snippets[^1].Name}\n{_snippets[^1].Code}";
                 }
+                await _editor.SetValue(_userCode);
             }
             catch (Exception ex)
             {
@@ -262,8 +271,8 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
             }
         }
 
-        private void UpdateUserCode(string userSnippet) =>
-            _userCode = userSnippet;
+        private Task UpdateUserCode(string userSnippet) =>
+            _editor.SetValue(userSnippet);
 
         private async Task JsonToClass()
         {
@@ -441,6 +450,18 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
                 await DialogService.ShowErrorAsync(ex.Message);
             }
         }
+
+        private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+        {
+            return new StandaloneEditorConstructionOptions
+            {
+                AutomaticLayout = true,
+                Language = "javascript",
+                Value = _userCode,
+                Theme = "vs-dark",
+            };
+        }
+
         #endregion Private Methods
     }
 }

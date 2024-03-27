@@ -140,6 +140,11 @@ code {
     color: #c02d76;
 }
 
+.monaco-editor-container { 
+    width: 100%;
+    height: 35vh;
+}
+
 @media (max-width: 600px) {
     .main {
         flex-direction: column !important;

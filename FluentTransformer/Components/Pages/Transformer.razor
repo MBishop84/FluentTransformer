@@ -94,7 +94,7 @@
                 <FluentSelect Items=@_snippets
                               OptionText="@(i => i.Name.Substring(2))"
                               OptionValue="@(i => $"{i.Name}\n{i.Code}")"
-                              ValueChanged="@(x => UpdateUserCode(x))"
+                              ValueChanged="@(async x => await UpdateUserCode(x))"
                               Width="100%" />
             </FluentGridItem>
             <FluentGridItem xs="4" Justify="JustifyContent.Center">
@@ -124,7 +124,7 @@
         </FluentGrid>
         <FluentGrid Spacing="3" Justify="JustifyContent.Center">
             <FluentGridItem xs="12" Justify="JustifyContent.Center">
-                <FluentTextArea @bind-Value=_userCode style="width: 100%;" Rows="@((int?)Math.Round(_rows * 0.3))" Placeholder="UserCode"></FluentTextArea>
+                <StandaloneCodeEditor Id="user_code" ConstructionOptions="EditorConstructionOptions" @ref="_editor" />
             </FluentGridItem>
         </FluentGrid>
         <br />
