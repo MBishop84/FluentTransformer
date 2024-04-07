@@ -114,8 +114,8 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
                 {
                     return _dynamic switch
                     {
-                        true => int.TryParse(x, out int i)
-                            ? $"{i}" : $"{frontParentheses}{x}{endParentheses}",
+                        true => int.TryParse(x, out int i) || x.Equals("null", StringComparison.OrdinalIgnoreCase)
+                            ? $"{x}" : $"{frontParentheses}{x}{endParentheses}",
                         false => $"{frontParentheses}{x}{endParentheses}"
                     };
                 }) ?? [])}{endBracket}";
@@ -210,10 +210,10 @@ WHERE tbl.table_type = 'base table' and tbl.table_name = 'TableName'";
 
                 _snippets.Remove(_snippets.First(x => x.Name == userSnippet[0]));
 
-                using StreamWriter outputFile = new(snippetFile, false);
+                await using StreamWriter outputFile = new(snippetFile, false);
                 await outputFile.WriteAsync(JsonConvert.SerializeObject(_snippets));
                 await DialogService.ShowSuccessAsync("Your Transform has been deleted!");
-                _userCode = string.Empty;
+                await _editor.SetValue(string.Empty);
             }
             catch (Exception ex)
             {

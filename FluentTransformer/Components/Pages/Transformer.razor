@@ -40,7 +40,7 @@
                 <p>Parentheses</p>
                 <FluentButton @onclick="ClearParentheses" Appearance="Appearance.Lightweight" Style="width: 100%;">Clear</FluentButton>
                 <FluentRadioGroup Required="false" aria-labelledby="label1" @bind-Value=_parentheses Name="split" Orientation="Orientation.Vertical">
-                    <FluentRadio Value="@(@"""""")">"..."</FluentRadio>
+                    <FluentRadio Value="@("\"\"")">"..."</FluentRadio>
                     <FluentRadio Value="@("''")" Checked="true">'...'</FluentRadio>
                 </FluentRadioGroup>
                 <FluentCheckbox @bind-Value="@_dynamic" Label="Dynamic" />
